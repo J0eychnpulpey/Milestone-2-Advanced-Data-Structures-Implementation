@@ -384,7 +384,7 @@ public class InventorySystem {
         System.out.println("Loading inventory data...");
         
         // Update this path to match your CSV file location
-        String csvFilePath = "/home/vegand0g/Documents/DSA Array/MotorPHInventorySystem/src/data/Copy of MotorPH Inventory Data - March 2023 Inventory Data.csv";
+        String csvFilePath = "/workspaces/Milestone-2-Advanced-Data-Structures-Implementation/MotorPHInventorySystem/src/data/Copy of MotorPH Inventory Data - March 2023 Inventory Data.csv";
         boolean loaded = system.loadInventoryFromCSV(csvFilePath);
         
         if (!loaded) {
