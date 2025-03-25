@@ -18,10 +18,8 @@ Binary Search Tree (BST): Organizes inventory items in a hierarchical structure 
 Hash Tables: Multiple hash maps provide O(1) constant-time lookups for different attributes:
 
 Engine number (primary key)
-Brand
-Status
-Purchase status
+- Brand
+- Status
+- Purchase status
 
 
-
-This combination allows for efficient operations across all required functionalities, with significant performance advantages over the ArrayList implementation from Milestone 1.
