@@ -4,18 +4,39 @@ import java.util.*;
 public class InventorySystem {
     private StockNode root;        // BST root
     private HashIndexes indexes;   // Hash-based indexes
+    private String csvFilePath;    // Path to CSV file for persistence
     
-    // Constructor
+    // Constructor with file path parameter
+    public InventorySystem(String csvFilePath) {
+        this.root = null;
+        this.indexes = new HashIndexes();
+        this.csvFilePath = csvFilePath;
+    }
+    
+    // Default constructor
     public InventorySystem() {
         this.root = null;
         this.indexes = new HashIndexes();
+        this.csvFilePath = null;
+    }
+    
+    /**
+     * Set the CSV file path
+     */
+    public void setCsvFilePath(String csvFilePath) {
+        this.csvFilePath = csvFilePath;
     }
     
     /**
      * Load inventory data from CSV file
      */
     public boolean loadInventoryFromCSV(String filePath) {
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+        // Update the file path if provided
+        if (filePath != null) {
+            this.csvFilePath = filePath;
+        }
+        
+        try (BufferedReader br = new BufferedReader(new FileReader(this.csvFilePath))) {
             String line;
             boolean isHeader = true;
             while ((line = br.readLine()) != null) {
@@ -37,8 +58,8 @@ public class InventorySystem {
                         data[4].trim()   // purchaseStatus (On-hand/Sold)
                     );
                     
-                    // Add to both data structures
-                    addStock(stock);
+                    // Add to both data structures without saving back to CSV
+                    addStockWithoutSaving(stock);
                 }
             }
             return true;
@@ -49,7 +70,61 @@ public class InventorySystem {
     }
     
     /**
-     * Add new stock with validation
+     * Save inventory data to CSV file
+     */
+    public boolean saveInventoryToCSV() {
+        if (csvFilePath == null) {
+            System.err.println("Error: CSV file path not set");
+            return false;
+        }
+        
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(csvFilePath))) {
+            // Write header row
+            writer.write("Date,Status,Brand,Engine Number,Purchase Status");
+            writer.newLine();
+            
+            // Get all inventory items
+            ArrayList<Stock> items = getAllItems();
+            
+            // Write each item to the CSV
+            for (Stock stock : items) {
+                writer.write(String.format("%s,%s,%s,%s,%s",
+                    stock.getDate(),
+                    stock.getStatus(),
+                    stock.getBrand(),
+                    stock.getEngineNumber(),
+                    stock.getPurchaseStatus()));
+                writer.newLine();
+            }
+            
+            System.out.println("Inventory saved to CSV file successfully!");
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error saving inventory data: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Add stock without saving to CSV (used for initial loading)
+     */
+    private String addStockWithoutSaving(Stock newStock) {
+        // Check if engine number already exists using hash table (O(1))
+        if (indexes.containsEngineNumber(newStock.getEngineNumber())) {
+            return "Error: Engine number already exists in inventory";
+        }
+        
+        // Add to BST
+        root = insertNode(root, newStock);
+        
+        // Add to hash indexes
+        indexes.addStock(newStock);
+        
+        return "Success: New stock added to inventory";
+    }
+    
+    /**
+     * Add new stock with validation and save to CSV
      */
     public String addStock(Stock newStock) {
         // Check if engine number already exists using hash table (O(1))
@@ -62,6 +137,11 @@ public class InventorySystem {
         
         // Add to hash indexes
         indexes.addStock(newStock);
+        
+        // Save changes to CSV file
+        if (csvFilePath != null) {
+            saveInventoryToCSV();
+        }
         
         return "Success: New stock added to inventory";
     }
@@ -91,7 +171,7 @@ public class InventorySystem {
     }
     
     /**
-     * Delete stock with validation
+     * Delete stock with validation and save to CSV
      */
     public String deleteStock(String engineNumber) {
         // Find stock using hash table (O(1))
@@ -112,6 +192,11 @@ public class InventorySystem {
             
             // Remove from BST
             root = deleteNode(root, engineNumber);
+            
+            // Save changes to CSV file
+            if (csvFilePath != null) {
+                saveInventoryToCSV();
+            }
             
             return "Success: Stock with engine number " + engineNumber + " has been deleted";
         } else {
@@ -378,13 +463,14 @@ public class InventorySystem {
      * Main method for testing
      */
     public static void main(String[] args) {
-        InventorySystem system = new InventorySystem();
+        // Update this path to match your CSV file location
+        String csvFilePath = "/workspaces/Milestone-2-Advanced-Data-Structures-Implementation/MotorPHInventorySystem/src/data/Copy of MotorPH Inventory Data - March 2023 Inventory Data.csv";
+        
+        // Create system with file path
+        InventorySystem system = new InventorySystem(csvFilePath);
         
         // Load inventory data
         System.out.println("Loading inventory data...");
-        
-        // Update this path to match your CSV file location
-        String csvFilePath = "/workspaces/Milestone-2-Advanced-Data-Structures-Implementation/MotorPHInventorySystem/src/data/Copy of MotorPH Inventory Data - March 2023 Inventory Data.csv";
         boolean loaded = system.loadInventoryFromCSV(csvFilePath);
         
         if (!loaded) {
@@ -427,7 +513,8 @@ public class InventorySystem {
                         String purchaseStatus = scanner.nextLine();
                         
                         Stock newStock = new Stock(date, status, brand, engineNumber, purchaseStatus);
-                        System.out.println(system.addStock(newStock));
+                        String result = system.addStock(newStock);
+                        System.out.println(result);
                         break;
                         
                     case 2:
